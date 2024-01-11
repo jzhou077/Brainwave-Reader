@@ -1,10 +1,12 @@
 using System;
+using System.Collections;
 using System.IO.Ports;
 using System.Threading;
 
 public class BluetoothManager {
 
     private SerialPort serialPort;
+    private SerialPort outputPort;
     private byte lastByte;
     private bool freshPacket = false;
     private bool inPacket = false;
@@ -23,11 +25,19 @@ public class BluetoothManager {
     private uint[] eegPower = new uint[EEG_POWER_BANDS];
     private byte[] packetData = new byte[MAX_PACKET_LENGTH];
     public BluetoothManager() {
-        serialPort = new SerialPort("COM3", 9600, Parity.None, 8, StopBits.One);
+        serialPort = new SerialPort("COM4", 9600, Parity.None, 8, StopBits.One);
         serialPort.DataReceived += new SerialDataReceivedEventHandler(DataReceivedHandler);
+        outputPort = new SerialPort("COM5", 9600, Parity.None, 8, StopBits.One);
 
-        if (!serialPort.IsOpen)
+        if (!serialPort.IsOpen) {
             serialPort.Open();
+        }
+        
+        if (!outputPort.IsOpen) {
+            Console.WriteLine(outputPort.IsOpen);
+            outputPort.Open();
+            Console.WriteLine(outputPort.IsOpen);
+        }
     }
 
     private void DataReceivedHandler(object sender, SerialDataReceivedEventArgs e) {
@@ -62,6 +72,7 @@ public class BluetoothManager {
                             parseSuccess = parsePacket();
                             
                             if (parseSuccess) {
+                                sendSignal();
                                 freshPacket = true;
                             }
                             else {
@@ -139,6 +150,15 @@ public class BluetoothManager {
             }
         }
         return parseSuccess;
+    }
+
+    private void sendSignal() {
+        if (attention > 55) {
+            outputPort.Write("t");
+        }
+        else {
+            outputPort.Write("f");
+        }
     }
 
     public void Start() {
