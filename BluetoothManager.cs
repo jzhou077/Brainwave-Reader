@@ -24,8 +24,10 @@ public class BluetoothManager {
 
     private uint[] eegPower = new uint[EEG_POWER_BANDS];
     private byte[] packetData = new byte[MAX_PACKET_LENGTH];
+
+    private bool isActivated = false; 
     public BluetoothManager() {
-        serialPort = new SerialPort("COM4", 9600, Parity.None, 8, StopBits.One);
+        serialPort = new SerialPort("COM4", 57600, Parity.None, 8, StopBits.One);
         serialPort.DataReceived += new SerialDataReceivedEventHandler(DataReceivedHandler);
         outputPort = new SerialPort("COM5", 9600, Parity.None, 8, StopBits.One);
 
@@ -153,11 +155,13 @@ public class BluetoothManager {
     }
 
     private void sendSignal() {
-        if (attention > 55) {
+        if (attention > 55 && !isActivated) {
             outputPort.Write("t");
+            isActivated = true;
         }
-        else {
+        else if (attention <= 55 && isActivated){
             outputPort.Write("f");
+            isActivated = false;
         }
     }
 
